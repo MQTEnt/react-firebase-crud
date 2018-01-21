@@ -4,7 +4,12 @@ import fire from './fire';
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = { items: [] };
+    this.state = { 
+      items: [],
+      selectedItem: {}
+    };
+
+    this.onBlurEditTextInput = this.onBlurEditTextInput.bind(this);
   }
   componentDidMount(){
     //READ DATA
@@ -52,14 +57,47 @@ class App extends Component {
     fire.database().ref('my-data').push( this.inputEl.value );
     this.inputEl.value = ''; //Clear the input
   }
+  onChangeItem(event, id){
+    this.setState({selectedItem: {id: id, text: event.target.value}})
+  }
+  onBlurEditTextInput(event){
+    var text = event.target.value;
+    let itemId =  this.state.selectedItem.id;
+
+    let updates = {};
+    updates['/my-data/' + itemId] = text;
+    this.setState({selectedItem: {}});
+    return fire.database().ref().update(updates);
+  }
+  onClickItem(item){
+    this.setState({selectedItem: item});
+  }
   render() {
+    let selectedItem = this.state.selectedItem;
     return (
       <form onSubmit={this.addMessage.bind(this)}>
-        <input type="text" ref={ el => this.inputEl = el }/>
+        <input type="text" ref={el=>this.inputEl=el}/>
         <input type="submit"/>
         <ul>
           { /* Render the list of items */
-            this.state.items.map( item => <li key={item.id}>{item.text}</li> )
+            this.state.items.map( item => 
+              (item.id === selectedItem.id)?
+              <input 
+                key={item.id} 
+                value={selectedItem.text} 
+                onChange={(e)=>this.onChangeItem(e, item.id)}
+                onBlur={this.onBlurEditTextInput}
+                ref={input=>input&&input.focus()}
+              />
+              :
+              <li 
+                key={item.id} 
+                onClick={()=>this.onClickItem(item)}
+                style={{cursor: 'pointer'}}
+              >
+                {item.text}
+              </li>
+            )
           }
         </ul>
       </form>
